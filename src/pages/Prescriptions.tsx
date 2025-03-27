@@ -9,128 +9,41 @@ import {
   TabsTrigger 
 } from "@/components/ui/tabs";
 import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
-import { 
   Dialog, 
   DialogContent, 
   DialogHeader, 
   DialogTitle 
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { FileText, Download, Printer, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import PrescriptionForm from "@/components/prescriptions/PrescriptionForm";
-import { toast } from "sonner";
-
-// Sample data for prescriptions
-const SAMPLE_PRESCRIPTIONS = [
-  {
-    id: "rx1",
-    patientName: "Sarah Johnson",
-    patientId: "P001",
-    date: "2023-10-15",
-    diagnosis: "Seasonal Allergy",
-    medicines: [
-      { name: "Cetirizine", dosage: "10mg", frequency: "Once daily", duration: "10 days" },
-      { name: "Montelukast", dosage: "10mg", frequency: "Once at bedtime", duration: "10 days" }
-    ]
-  },
-  {
-    id: "rx2",
-    patientName: "Michael Chen",
-    patientId: "P002",
-    date: "2023-09-28",
-    diagnosis: "Hypertension",
-    medicines: [
-      { name: "Amlodipine", dosage: "5mg", frequency: "Once daily", duration: "30 days" },
-      { name: "Hydrochlorothiazide", dosage: "12.5mg", frequency: "Once daily", duration: "30 days" }
-    ]
-  },
-  {
-    id: "rx3",
-    patientName: "Emily Rodriguez",
-    patientId: "P003",
-    date: "2023-10-02",
-    diagnosis: "Respiratory Infection",
-    medicines: [
-      { name: "Amoxicillin", dosage: "500mg", frequency: "Three times daily", duration: "7 days" },
-      { name: "Guaifenesin", dosage: "400mg", frequency: "Every 12 hours", duration: "5 days" }
-    ]
-  },
-];
-
-const PrescriptionCard = ({ prescription }: { prescription: any }) => {
-  return (
-    <Card className="hover:border-border transition-medium card-shadow">
-      <CardHeader>
-        <div className="flex justify-between items-start">
-          <div>
-            <CardTitle className="text-base font-medium">{prescription.patientName}</CardTitle>
-            <CardDescription>
-              Patient ID: {prescription.patientId} • {new Date(prescription.date).toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'short', 
-                day: 'numeric' 
-              })}
-            </CardDescription>
-          </div>
-          <div className="p-2 rounded-md bg-primary/10">
-            <FileText className="h-5 w-5 text-primary" />
-          </div>
-        </div>
-      </CardHeader>
-      
-      <CardContent>
-        <div className="mb-3">
-          <p className="text-sm font-medium">Diagnosis</p>
-          <p className="text-sm">{prescription.diagnosis}</p>
-        </div>
-        
-        <div>
-          <p className="text-sm font-medium mb-2">Medications</p>
-          <div className="space-y-2">
-            {prescription.medicines.map((medicine: any, index: number) => (
-              <div key={index} className="text-sm p-2 bg-muted/30 rounded-md">
-                <p className="font-medium">{medicine.name} - {medicine.dosage}</p>
-                <p className="text-muted-foreground text-xs">
-                  {medicine.frequency} for {medicine.duration}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </CardContent>
-      
-      <CardFooter className="flex justify-between">
-        <Button variant="ghost" size="sm">
-          <Printer className="h-4 w-4 mr-2" />
-          Print
-        </Button>
-        <Button variant="ghost" size="sm">
-          <Download className="h-4 w-4 mr-2" />
-          Download
-        </Button>
-      </CardFooter>
-    </Card>
-  );
-};
+import PrescriptionsList from "@/components/prescriptions/PrescriptionsList";
+import { usePrescriptions } from "@/hooks/usePrescriptions";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Prescriptions = () => {
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const { prescriptions, loading, error, addPrescription } = usePrescriptions();
 
   const handleNewPrescription = () => {
     setShowAddDialog(true);
   };
 
-  const handleSubmit = (values: any) => {
-    console.log("New prescription data:", values);
-    setShowAddDialog(false);
-    toast.success("Prescription created successfully");
+  const handleSubmit = async (values: any) => {
+    try {
+      await addPrescription({
+        patient_id: values.patientId,
+        medicine_name: values.medicines[0].name,
+        dosage: values.medicines[0].dosage,
+        frequency: values.medicines[0].frequency,
+        prescribed_date: new Date().toISOString(),
+        remarks: values.advice || null
+      });
+      
+      setShowAddDialog(false);
+    } catch (err) {
+      console.error("Error submitting prescription:", err);
+    }
   };
 
   return (
@@ -160,10 +73,32 @@ const Prescriptions = () => {
               <TabsTrigger value="archived">Archived</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="all" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {SAMPLE_PRESCRIPTIONS.map((prescription) => (
-                <PrescriptionCard key={prescription.id} prescription={prescription} />
-              ))}
+            <TabsContent value="all">
+              {loading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="border rounded-lg p-4">
+                      <Skeleton className="h-4 w-1/2 mb-2" />
+                      <Skeleton className="h-4 w-3/4 mb-4" />
+                      <Skeleton className="h-20 w-full mb-4" />
+                      <div className="flex justify-between">
+                        <Skeleton className="h-8 w-20" />
+                        <Skeleton className="h-8 w-20" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : error ? (
+                <div className="text-center py-12 text-destructive">
+                  <p>Error loading prescriptions. Please try again later.</p>
+                </div>
+              ) : prescriptions.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground">No prescriptions found. Create your first prescription.</p>
+                </div>
+              ) : (
+                <PrescriptionsList prescriptions={prescriptions} />
+              )}
             </TabsContent>
             
             <TabsContent value="recent">

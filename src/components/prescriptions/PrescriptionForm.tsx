@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useFieldArray } from "react-hook-form";
@@ -21,8 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash2, Plus, User } from "lucide-react";
+import { Trash2, Plus } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { usePatients } from "@/hooks/usePatients";
 
 const medicineSchema = z.object({
   name: z.string().min(1, "Medicine name is required"),
@@ -46,16 +46,9 @@ interface PrescriptionFormProps {
   onSubmit: (values: z.infer<typeof formSchema>) => void;
 }
 
-// Sample patient data - would come from API/database in a real app
-const SAMPLE_PATIENTS = [
-  { id: "p1", name: "Sarah Johnson", age: 42, gender: "Female" },
-  { id: "p2", name: "Michael Chen", age: 35, gender: "Male" },
-  { id: "p3", name: "Emily Rodriguez", age: 28, gender: "Female" },
-  { id: "p4", name: "David Wilson", age: 51, gender: "Male" },
-];
-
 const PrescriptionForm = ({ onSubmit }: PrescriptionFormProps) => {
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
+  const { patients, loading } = usePatients();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -76,7 +69,7 @@ const PrescriptionForm = ({ onSubmit }: PrescriptionFormProps) => {
   });
 
   const handlePatientChange = (patientId: string) => {
-    const patient = SAMPLE_PATIENTS.find(p => p.id === patientId);
+    const patient = patients.find(p => p.id === patientId);
     setSelectedPatient(patient);
     form.setValue("patientId", patientId);
   };
@@ -94,11 +87,11 @@ const PrescriptionForm = ({ onSubmit }: PrescriptionFormProps) => {
                 <Select onValueChange={handlePatientChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a patient" />
+                      <SelectValue placeholder={loading ? "Loading patients..." : "Select a patient"} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {SAMPLE_PATIENTS.map((patient) => (
+                    {patients.map((patient) => (
                       <SelectItem key={patient.id} value={patient.id}>
                         {patient.name} - {patient.age} years, {patient.gender}
                       </SelectItem>
