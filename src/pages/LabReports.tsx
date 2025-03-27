@@ -1,9 +1,8 @@
-
 import React from "react";
 import PageTransition from "@/components/layout/PageTransition";
 import Header from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, FileUp, Filter, Flask, Download, Eye } from "lucide-react";
+import { Plus, Search, FileUp, Filter, TestTube, Download, Eye } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { 
   Table, 
@@ -28,7 +27,6 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 
-// Sample data for lab reports
 const LAB_REPORTS = [
   {
     id: "lab1",
@@ -166,7 +164,7 @@ const LabReports = () => {
                     <TableCell>
                       <div className="flex items-center">
                         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center mr-2">
-                          <Flask className="h-4 w-4 text-primary" />
+                          <TestTube className="h-4 w-4 text-primary" />
                         </div>
                         {report.testName}
                       </div>

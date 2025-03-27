@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Users, FileText, Flask, Calendar, Activity } from "lucide-react";
+import { Users, FileText, TestTube, Calendar, Activity } from "lucide-react";
 import PageTransition from "@/components/layout/PageTransition";
 import Header from "@/components/layout/Header";
 import StatCard from "@/components/dashboard/StatCard";
@@ -57,7 +57,7 @@ const Dashboard = () => {
             <StatCard 
               title="Lab Reports" 
               value="842" 
-              icon={Flask}
+              icon={TestTube}
               trend={{ value: 4, isPositive: true }}
             />
             <StatCard 

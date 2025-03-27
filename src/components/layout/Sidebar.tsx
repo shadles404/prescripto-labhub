@@ -5,7 +5,7 @@ import {
   Home, 
   Users, 
   FileText, 
-  Flask, 
+  TestTube, 
   BarChart, 
   ChevronLeft, 
   ChevronRight 
@@ -20,7 +20,7 @@ const Sidebar = () => {
     { name: "Dashboard", icon: Home, path: "/" },
     { name: "Patients", icon: Users, path: "/patients" },
     { name: "Prescriptions", icon: FileText, path: "/prescriptions" },
-    { name: "Lab Reports", icon: Flask, path: "/lab-reports" },
+    { name: "Lab Reports", icon: TestTube, path: "/lab-reports" },
     { name: "Analytics", icon: BarChart, path: "/analytics" },
   ];
 
