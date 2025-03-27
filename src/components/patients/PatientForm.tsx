@@ -56,10 +56,13 @@ const PatientForm = ({ onSubmit }: PatientFormProps) => {
 
   const handleSubmit = async (values: FormValues) => {
     try {
-      // Convert age to number
+      // Convert age to number and ensure all required fields are present
       const formattedValues = {
-        ...values,
-        age: parseInt(values.age)
+        name: values.name, // Explicitly include to ensure it's not optional
+        gender: values.gender, // Explicitly include to ensure it's not optional
+        age: parseInt(values.age),
+        contact: values.contact || null,
+        address: values.address || null
       };
       
       // Add patient to database

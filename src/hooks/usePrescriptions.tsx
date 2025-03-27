@@ -25,7 +25,8 @@ export const usePrescriptions = () => {
     try {
       setLoading(true);
       
-      const { data, error } = await supabase
+      // First fetch prescriptions
+      const { data: prescriptionsData, error: prescriptionsError } = await supabase
         .from('prescriptions')
         .select(`
           id,
@@ -34,24 +35,30 @@ export const usePrescriptions = () => {
           dosage,
           frequency,
           prescribed_date,
-          remarks,
-          patients (
-            name
-          )
+          remarks
         `)
         .order('prescribed_date', { ascending: false });
         
-      if (error) throw error;
+      if (prescriptionsError) throw prescriptionsError;
       
-      // Transform the data to include patient name
-      const formattedData = (data || []).map(prescription => ({
-        ...prescription,
-        patient: {
-          name: prescription.patients?.name || 'Unknown Patient'
-        }
+      // Then fetch patient information separately to avoid join errors
+      const prescriptionsWithPatients = await Promise.all((prescriptionsData || []).map(async (prescription) => {
+        // Get patient data for each prescription
+        const { data: patientData, error: patientError } = await supabase
+          .from('patients')
+          .select('name')
+          .eq('id', prescription.patient_id)
+          .single();
+          
+        return {
+          ...prescription,
+          patient: {
+            name: patientData?.name || 'Unknown Patient'
+          }
+        };
       }));
       
-      setPrescriptions(formattedData);
+      setPrescriptions(prescriptionsWithPatients);
     } catch (err) {
       console.error("Error fetching prescriptions:", err);
       setError(err instanceof Error ? err : new Error('Unknown error fetching prescriptions'));

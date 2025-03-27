@@ -13,7 +13,7 @@ export type LabReport = {
   patient: {
     name: string;
   };
-  status?: "completed" | "pending";
+  status?: "completed" | "pending"; // Using a union type instead of string
 };
 
 export const useLabReports = () => {
@@ -42,22 +42,27 @@ export const useLabReports = () => {
         
       if (error) throw error;
       
-      // Transform the data to match our component's expectations
-      const formattedData = (data || []).map(report => ({
-        id: report.id,
-        patient_id: report.patient_id,
-        test_name: report.test_name,
-        result: report.result,
-        normal_range: report.normal_range,
-        test_date: report.test_date,
-        patient: {
-          name: report.patients?.name || 'Unknown Patient'
-        },
-        // For display purposes, we consider any result outside normal range as "pending"
-        status: report.normal_range && report.result <= report.normal_range 
-          ? 'completed' 
-          : 'pending'
-      }));
+      // Transform the data to include patient name and status with correct typing
+      const formattedData = (data || []).map(report => {
+        // Determine status as a union type, not a general string
+        const status: "completed" | "pending" = 
+          report.normal_range && report.result <= report.normal_range 
+            ? 'completed' 
+            : 'pending';
+            
+        return {
+          id: report.id,
+          patient_id: report.patient_id,
+          test_name: report.test_name,
+          result: report.result,
+          normal_range: report.normal_range,
+          test_date: report.test_date,
+          patient: {
+            name: report.patients?.name || 'Unknown Patient'
+          },
+          status
+        };
+      });
       
       setLabReports(formattedData);
     } catch (err) {
