@@ -9,6 +9,80 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      lab_reports: {
+        Row: {
+          created_at: string
+          id: string
+          normal_range: string | null
+          patient_id: string
+          result: string
+          test_date: string
+          test_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          normal_range?: string | null
+          patient_id: string
+          result: string
+          test_date?: string
+          test_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          normal_range?: string | null
+          patient_id?: string
+          result?: string
+          test_date?: string
+          test_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_reports_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patients: {
+        Row: {
+          address: string | null
+          age: number
+          contact: string | null
+          created_at: string
+          gender: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          age: number
+          contact?: string | null
+          created_at?: string
+          gender: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          age?: number
+          contact?: string | null
+          created_at?: string
+          gender?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       prescriptions: {
         Row: {
           created_at: string

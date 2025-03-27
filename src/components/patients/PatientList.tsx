@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { 
@@ -11,62 +11,88 @@ import {
 } from "@/components/ui/select";
 import { Search, UserPlus, Filter } from "lucide-react";
 import PatientCard from "./PatientCard";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
-// Sample data - would come from API/database in a real app
-const SAMPLE_PATIENTS = [
-  {
-    id: "p1",
-    name: "Sarah Johnson",
-    age: 42,
-    gender: "Female",
-    contact: "+1 (555) 123-4567",
-    email: "sarah.j@example.com",
-    lastVisit: "June 12, 2023",
-  },
-  {
-    id: "p2",
-    name: "Michael Chen",
-    age: 35,
-    gender: "Male",
-    contact: "+1 (555) 987-6543",
-    email: "michael.c@example.com",
-    lastVisit: "August 3, 2023",
-  },
-  {
-    id: "p3",
-    name: "Emily Rodriguez",
-    age: 28,
-    gender: "Female",
-    contact: "+1 (555) 456-7890",
-    email: "emily.r@example.com",
-    lastVisit: "September 15, 2023",
-  },
-  {
-    id: "p4",
-    name: "David Wilson",
-    age: 51,
-    gender: "Male",
-    contact: "+1 (555) 246-8102",
-    email: "david.w@example.com",
-    lastVisit: "May 22, 2023",
-  },
-];
+interface Patient {
+  id: string;
+  name: string;
+  age: number;
+  gender: string;
+  contact: string | null;
+  address: string | null;
+  created_at: string;
+}
 
 interface PatientListProps {
   onAddPatient: () => void;
 }
 
 const PatientList = ({ onAddPatient }: PatientListProps) => {
-  const [patients] = useState(SAMPLE_PATIENTS);
+  const [patients, setPatients] = useState<Patient[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterOption, setFilterOption] = useState("all");
+  const [loading, setLoading] = useState(true);
+
+  const fetchPatients = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('patients')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      setPatients(data || []);
+    } catch (error) {
+      console.error("Error fetching patients:", error);
+      toast.error("Failed to load patients");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPatients();
+    
+    // Set up real-time listener for changes
+    const channel = supabase
+      .channel('public:patients')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'patients' 
+      }, () => {
+        fetchPatients();
+      })
+      .subscribe();
+    
+    // Cleanup function
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const handleEdit = (id: string) => {
     console.log("Edit patient with ID:", id);
   };
 
-  const handleDelete = (id: string) => {
-    console.log("Delete patient with ID:", id);
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('patients')
+        .delete()
+        .eq('id', id);
+        
+      if (error) throw error;
+      
+      toast.success("Patient deleted successfully");
+    } catch (error) {
+      console.error("Error deleting patient:", error);
+      toast.error("Failed to delete patient");
+    }
   };
 
   const handleViewPrescriptions = (id: string) => {
@@ -78,7 +104,7 @@ const PatientList = ({ onAddPatient }: PatientListProps) => {
     const matchesSearch = patient.name.toLowerCase().includes(searchTerm.toLowerCase());
     
     if (filterOption === "all") return matchesSearch;
-    return matchesSearch && patient.gender.toLowerCase() === filterOption;
+    return matchesSearch && patient.gender.toLowerCase() === filterOption.toLowerCase();
   });
 
   return (
@@ -117,16 +143,55 @@ const PatientList = ({ onAddPatient }: PatientListProps) => {
         </div>
       </div>
       
-      {filteredPatients.length === 0 ? (
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="p-6 rounded-xl bg-card border border-border/40 card-shadow">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <Skeleton className="h-5 w-32 mb-2" />
+                  <Skeleton className="h-4 w-20" />
+                </div>
+                <Skeleton className="h-10 w-10 rounded-full" />
+              </div>
+              <div className="space-y-2 mb-4">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+              </div>
+              <div className="flex justify-between">
+                <Skeleton className="h-9 w-20" />
+                <Skeleton className="h-9 w-20" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : filteredPatients.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-muted-foreground">No patients found. Try different search criteria.</p>
+          <p className="text-muted-foreground">No patients found. Try different search criteria or add a new patient.</p>
+          <Button onClick={onAddPatient} variant="outline" className="mt-4">
+            <UserPlus className="h-4 w-4 mr-2" />
+            Add First Patient
+          </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredPatients.map((patient) => (
             <PatientCard
               key={patient.id}
-              patient={patient}
+              patient={{
+                id: patient.id,
+                name: patient.name,
+                age: patient.age,
+                gender: patient.gender,
+                contact: patient.contact || undefined,
+                email: "", // Not in our schema yet
+                lastVisit: new Date(patient.created_at).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })
+              }}
               onEdit={handleEdit}
               onDelete={handleDelete}
               onViewPrescriptions={handleViewPrescriptions}
