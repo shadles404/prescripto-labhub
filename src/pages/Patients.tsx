@@ -20,7 +20,6 @@ const Patients = () => {
   };
 
   const handleSubmit = (values: any) => {
-    console.log("New patient data:", values);
     setShowAddDialog(false);
     toast.success("Patient registered successfully");
   };

@@ -1,9 +1,9 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import PageTransition from "@/components/layout/PageTransition";
 import Header from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, FileUp, Filter, TestTube, Download, Eye } from "lucide-react";
+import { Plus, Search, Filter, TestTube, Download, Eye } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { 
   Table, 
@@ -22,26 +22,21 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { 
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
-
-interface LabReport {
-  id: string;
-  patient_id: string;
-  test_name: string;
-  result: string;
-  test_date: string;
-  patient: {
-    name: string;
-  };
-  status: "completed" | "pending";
-}
+import { useLabReports } from "@/hooks/useLabReports";
+import LabReportForm from "@/components/lab-reports/LabReportForm";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -55,74 +50,10 @@ const getStatusColor = (status: string) => {
 };
 
 const LabReports = () => {
-  const [labReports, setLabReports] = useState<LabReport[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { labReports, loading, addLabReport } = useLabReports();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-
-  const fetchLabReports = async () => {
-    try {
-      setLoading(true);
-      
-      // In a real implementation, we'd join with patients table
-      // For now, we're using a simplified query
-      const { data, error } = await supabase
-        .from('lab_reports')
-        .select(`
-          id,
-          patient_id,
-          test_name,
-          result,
-          test_date,
-          patients(name)
-        `)
-        .order('test_date', { ascending: false });
-        
-      if (error) throw error;
-      
-      // Transform the data to match our component's expectations
-      const formattedData = (data || []).map(report => ({
-        id: report.id,
-        patient_id: report.patient_id,
-        test_name: report.test_name,
-        result: report.result,
-        test_date: report.test_date,
-        patient: {
-          name: report.patients?.name || 'Unknown Patient'
-        },
-        // For demo purposes, we're randomly assigning status
-        status: Math.random() > 0.3 ? 'completed' : 'pending' as 'completed' | 'pending'
-      }));
-      
-      setLabReports(formattedData);
-    } catch (error) {
-      console.error("Error fetching lab reports:", error);
-      toast.error("Failed to load lab reports");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchLabReports();
-    
-    // Set up real-time listener for changes
-    const channel = supabase
-      .channel('public:lab_reports')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'lab_reports' 
-      }, () => {
-        fetchLabReports();
-      })
-      .subscribe();
-    
-    // Cleanup function
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   // Filter reports based on search term and status filter
   const filteredReports = labReports.filter(report => {
@@ -133,6 +64,15 @@ const LabReports = () => {
     if (statusFilter === "all") return matchesSearch;
     return matchesSearch && report.status === statusFilter;
   });
+
+  const handleAddLabReport = async (formData: any) => {
+    try {
+      await addLabReport(formData);
+      setIsAddDialogOpen(false);
+    } catch (error) {
+      console.error("Error adding lab report:", error);
+    }
+  };
 
   return (
     <PageTransition>
@@ -149,13 +89,9 @@ const LabReports = () => {
             </div>
             
             <div className="flex space-x-2">
-              <Button variant="outline">
-                <FileUp className="h-4 w-4 mr-2" />
-                Upload Report
-              </Button>
-              <Button>
+              <Button onClick={() => setIsAddDialogOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
-                New Test Request
+                New Lab Report
               </Button>
             </div>
           </div>
@@ -259,8 +195,8 @@ const LabReports = () => {
                         })}
                       </TableCell>
                       <TableCell>
-                        <Badge className={`${getStatusColor(report.status)} capitalize`}>
-                          {report.status}
+                        <Badge className={`${getStatusColor(report.status || 'pending')} capitalize`}>
+                          {report.status || 'pending'}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
@@ -291,6 +227,15 @@ const LabReports = () => {
             </Table>
           </div>
         </div>
+
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>Add Lab Report</DialogTitle>
+            </DialogHeader>
+            <LabReportForm onSubmit={handleAddLabReport} />
+          </DialogContent>
+        </Dialog>
       </div>
     </PageTransition>
   );
