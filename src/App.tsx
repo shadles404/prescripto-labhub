@@ -12,30 +12,36 @@ import LabReports from "@/pages/LabReports";
 import Analytics from "@/pages/Analytics";
 import NotFound from "@/pages/NotFound";
 import { motion, AnimatePresence } from "framer-motion";
+import React from 'react'; // Added explicit React import
 
+// Create a new QueryClient instance
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AnimatePresence mode="wait">
-          <Routes>
-            <Route path="/" element={<MainLayout />}>
-              <Route index element={<Dashboard />} />
-              <Route path="patients" element={<Patients />} />
-              <Route path="prescriptions" element={<Prescriptions />} />
-              <Route path="lab-reports" element={<LabReports />} />
-              <Route path="analytics" element={<Analytics />} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AnimatePresence>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  return (
+    <React.StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AnimatePresence mode="wait">
+              <Routes>
+                <Route path="/" element={<MainLayout />}>
+                  <Route index element={<Dashboard />} />
+                  <Route path="patients" element={<Patients />} />
+                  <Route path="prescriptions" element={<Prescriptions />} />
+                  <Route path="lab-reports" element={<LabReports />} />
+                  <Route path="analytics" element={<Analytics />} />
+                </Route>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </AnimatePresence>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </React.StrictMode>
+  );
+};
 
 export default App;
