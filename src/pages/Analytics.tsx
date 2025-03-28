@@ -29,51 +29,33 @@ import {
   TabsList, 
   TabsTrigger 
 } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useAnalyticsData } from "@/hooks/useAnalyticsData";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
-// Sample data for charts
-const MEDICINE_DATA = [
-  { name: "Amoxicillin", count: 124 },
-  { name: "Amlodipine", count: 98 },
-  { name: "Lisinopril", count: 86 },
-  { name: "Metformin", count: 72 },
-  { name: "Atorvastatin", count: 65 },
-];
-
-const TEST_DATA = [
-  { name: "Complete Blood Count", count: 48 },
-  { name: "Lipid Panel", count: 39 },
-  { name: "HbA1c", count: 35 },
-  { name: "Liver Function", count: 28 },
-  { name: "Urinalysis", count: 25 },
-];
-
-const MONTHLY_DATA = [
-  { name: "Jan", patients: 45, prescriptions: 78, tests: 32 },
-  { name: "Feb", patients: 52, prescriptions: 85, tests: 37 },
-  { name: "Mar", patients: 49, prescriptions: 90, tests: 42 },
-  { name: "Apr", patients: 63, prescriptions: 108, tests: 46 },
-  { name: "May", patients: 59, prescriptions: 102, tests: 41 },
-  { name: "Jun", patients: 65, prescriptions: 118, tests: 50 },
-  { name: "Jul", patients: 61, prescriptions: 110, tests: 45 },
-];
-
-const GENDER_DATA = [
-  { name: "Male", value: 285 },
-  { name: "Female", value: 348 },
-  { name: "Other", value: 15 },
-];
-
-const GENDER_COLORS = ["#0A84FF", "#BF5AF2", "#64D2FF"];
-
-const AGE_DATA = [
-  { name: "0-18", count: 78 },
-  { name: "19-35", count: 142 },
-  { name: "36-50", count: 169 },
-  { name: "51-65", count: 153 },
-  { name: "65+", count: 106 },
-];
+// Colors for charts
+const GENDER_COLORS = ["#0A84FF", "#BF5AF2", "#64D2FF", "#30D158", "#FF9F0A"];
 
 const Analytics = () => {
+  const { data, loading, error } = useAnalyticsData();
+  
+  const renderSkeletonChart = (height: number = 350) => (
+    <div className="w-full flex flex-col space-y-2 p-4">
+      <Skeleton className="h-4 w-1/4 mb-4" />
+      <Skeleton className="h-[calc(100%-32px)] w-full" style={{ height: `${height - 32}px` }} />
+    </div>
+  );
+  
+  const renderErrorState = () => (
+    <Alert variant="destructive" className="mb-6">
+      <AlertCircle className="h-4 w-4" />
+      <AlertDescription>
+        Unable to load analytics data. Please try again later.
+      </AlertDescription>
+    </Alert>
+  );
+  
   return (
     <PageTransition>
       <div className="min-h-screen flex flex-col">
@@ -86,6 +68,8 @@ const Analytics = () => {
               Insights and statistics for your medical practice
             </p>
           </div>
+          
+          {error && renderErrorState()}
           
           <Tabs defaultValue="overview">
             <TabsList className="mb-6">
@@ -103,45 +87,49 @@ const Analytics = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="h-[350px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={MONTHLY_DATA}>
-                          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.15} />
-                          <XAxis dataKey="name" />
-                          <YAxis />
-                          <Tooltip 
-                            contentStyle={{ 
-                              backgroundColor: "hsl(var(--card))", 
-                              borderRadius: "0.5rem",
-                              border: "1px solid hsl(var(--border))",
-                            }}
-                          />
-                          <Legend />
-                          <Line 
-                            type="monotone" 
-                            dataKey="patients" 
-                            stroke="#0A84FF" 
-                            strokeWidth={2} 
-                            dot={{ r: 3 }} 
-                            activeDot={{ r: 5 }}
-                          />
-                          <Line 
-                            type="monotone" 
-                            dataKey="prescriptions" 
-                            stroke="#30D158" 
-                            strokeWidth={2} 
-                            dot={{ r: 3 }} 
-                            activeDot={{ r: 5 }}
-                          />
-                          <Line 
-                            type="monotone" 
-                            dataKey="tests" 
-                            stroke="#BF5AF2" 
-                            strokeWidth={2} 
-                            dot={{ r: 3 }} 
-                            activeDot={{ r: 5 }}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
+                      {loading ? (
+                        renderSkeletonChart()
+                      ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={data.monthlyData}>
+                            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.15} />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip 
+                              contentStyle={{ 
+                                backgroundColor: "hsl(var(--card))", 
+                                borderRadius: "0.5rem",
+                                border: "1px solid hsl(var(--border))",
+                              }}
+                            />
+                            <Legend />
+                            <Line 
+                              type="monotone" 
+                              dataKey="patients" 
+                              stroke="#0A84FF" 
+                              strokeWidth={2} 
+                              dot={{ r: 3 }} 
+                              activeDot={{ r: 5 }}
+                            />
+                            <Line 
+                              type="monotone" 
+                              dataKey="prescriptions" 
+                              stroke="#30D158" 
+                              strokeWidth={2} 
+                              dot={{ r: 3 }} 
+                              activeDot={{ r: 5 }}
+                            />
+                            <Line 
+                              type="monotone" 
+                              dataKey="tests" 
+                              stroke="#BF5AF2" 
+                              strokeWidth={2} 
+                              dot={{ r: 3 }} 
+                              activeDot={{ r: 5 }}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -152,31 +140,39 @@ const Analytics = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="h-[350px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={MEDICINE_DATA} layout="vertical">
-                          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.15} horizontal={true} vertical={false} />
-                          <XAxis type="number" />
-                          <YAxis 
-                            dataKey="name" 
-                            type="category" 
-                            width={120} 
-                            tick={{ fontSize: 12 }} 
-                          />
-                          <Tooltip
-                            contentStyle={{ 
-                              backgroundColor: "hsl(var(--card))", 
-                              borderRadius: "0.5rem",
-                              border: "1px solid hsl(var(--border))",
-                            }}
-                          />
-                          <Bar 
-                            dataKey="count" 
-                            fill="#0A84FF" 
-                            radius={[0, 4, 4, 0]} 
-                            barSize={20}
-                          />
-                        </BarChart>
-                      </ResponsiveContainer>
+                      {loading ? (
+                        renderSkeletonChart()
+                      ) : data.medicineData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={data.medicineData} layout="vertical">
+                            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.15} horizontal={true} vertical={false} />
+                            <XAxis type="number" />
+                            <YAxis 
+                              dataKey="name" 
+                              type="category" 
+                              width={120} 
+                              tick={{ fontSize: 12 }} 
+                            />
+                            <Tooltip
+                              contentStyle={{ 
+                                backgroundColor: "hsl(var(--card))", 
+                                borderRadius: "0.5rem",
+                                border: "1px solid hsl(var(--border))",
+                              }}
+                            />
+                            <Bar 
+                              dataKey="count" 
+                              fill="#0A84FF" 
+                              radius={[0, 4, 4, 0]} 
+                              barSize={20}
+                            />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-full flex items-center justify-center">
+                          <p className="text-muted-foreground">No prescription data available yet</p>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -189,26 +185,34 @@ const Analytics = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="h-[300px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={TEST_DATA}>
-                          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.15} vertical={false} />
-                          <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                          <YAxis />
-                          <Tooltip
-                            contentStyle={{ 
-                              backgroundColor: "hsl(var(--card))", 
-                              borderRadius: "0.5rem",
-                              border: "1px solid hsl(var(--border))",
-                            }}
-                          />
-                          <Bar 
-                            dataKey="count" 
-                            fill="#64D2FF" 
-                            radius={[4, 4, 0, 0]} 
-                            barSize={40}
-                          />
-                        </BarChart>
-                      </ResponsiveContainer>
+                      {loading ? (
+                        renderSkeletonChart(300)
+                      ) : data.testData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={data.testData}>
+                            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.15} vertical={false} />
+                            <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                            <YAxis />
+                            <Tooltip
+                              contentStyle={{ 
+                                backgroundColor: "hsl(var(--card))", 
+                                borderRadius: "0.5rem",
+                                border: "1px solid hsl(var(--border))",
+                              }}
+                            />
+                            <Bar 
+                              dataKey="count" 
+                              fill="#64D2FF" 
+                              radius={[4, 4, 0, 0]} 
+                              barSize={40}
+                            />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-full flex items-center justify-center">
+                          <p className="text-muted-foreground">No lab test data available yet</p>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -219,33 +223,41 @@ const Analytics = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="h-[300px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={GENDER_DATA}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            outerRadius={80}
-                            fill="#8884d8"
-                            dataKey="value"
-                            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                          >
-                            {GENDER_DATA.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={GENDER_COLORS[index % GENDER_COLORS.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip
-                            contentStyle={{ 
-                              backgroundColor: "hsl(var(--card))", 
-                              borderRadius: "0.5rem",
-                              border: "1px solid hsl(var(--border))",
-                            }}
-                            formatter={(value) => [`${value} patients`, 'Count']}
-                          />
-                          <Legend />
-                        </PieChart>
-                      </ResponsiveContainer>
+                      {loading ? (
+                        renderSkeletonChart(300)
+                      ) : data.genderData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={data.genderData}
+                              cx="50%"
+                              cy="50%"
+                              labelLine={false}
+                              outerRadius={80}
+                              fill="#8884d8"
+                              dataKey="value"
+                              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                            >
+                              {data.genderData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={GENDER_COLORS[index % GENDER_COLORS.length]} />
+                              ))}
+                            </Pie>
+                            <Tooltip
+                              contentStyle={{ 
+                                backgroundColor: "hsl(var(--card))", 
+                                borderRadius: "0.5rem",
+                                border: "1px solid hsl(var(--border))",
+                              }}
+                              formatter={(value) => [`${value} patients`, 'Count']}
+                            />
+                            <Legend />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-full flex items-center justify-center">
+                          <p className="text-muted-foreground">No patient data available yet</p>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -260,26 +272,34 @@ const Analytics = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="h-[350px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={AGE_DATA}>
-                          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.15} vertical={false} />
-                          <XAxis dataKey="name" />
-                          <YAxis />
-                          <Tooltip
-                            contentStyle={{ 
-                              backgroundColor: "hsl(var(--card))", 
-                              borderRadius: "0.5rem",
-                              border: "1px solid hsl(var(--border))",
-                            }}
-                          />
-                          <Bar 
-                            dataKey="count" 
-                            fill="#BF5AF2" 
-                            radius={[4, 4, 0, 0]} 
-                            barSize={50}
-                          />
-                        </BarChart>
-                      </ResponsiveContainer>
+                      {loading ? (
+                        renderSkeletonChart(350)
+                      ) : data.ageData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={data.ageData}>
+                            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.15} vertical={false} />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip
+                              contentStyle={{ 
+                                backgroundColor: "hsl(var(--card))", 
+                                borderRadius: "0.5rem",
+                                border: "1px solid hsl(var(--border))",
+                              }}
+                            />
+                            <Bar 
+                              dataKey="count" 
+                              fill="#BF5AF2" 
+                              radius={[4, 4, 0, 0]} 
+                              barSize={50}
+                            />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-full flex items-center justify-center">
+                          <p className="text-muted-foreground">No patient data available yet</p>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -290,32 +310,40 @@ const Analytics = () => {
                   </CardHeader>
                   <CardContent className="flex items-center justify-center">
                     <div className="h-[350px] w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={GENDER_DATA}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={true}
-                            outerRadius={120}
-                            fill="#8884d8"
-                            dataKey="value"
-                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                          >
-                            {GENDER_DATA.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={GENDER_COLORS[index % GENDER_COLORS.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip
-                            contentStyle={{ 
-                              backgroundColor: "hsl(var(--card))", 
-                              borderRadius: "0.5rem",
-                              border: "1px solid hsl(var(--border))",
-                            }}
-                            formatter={(value) => [`${value} patients`, 'Count']}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
+                      {loading ? (
+                        renderSkeletonChart(350)
+                      ) : data.genderData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={data.genderData}
+                              cx="50%"
+                              cy="50%"
+                              labelLine={true}
+                              outerRadius={120}
+                              fill="#8884d8"
+                              dataKey="value"
+                              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                            >
+                              {data.genderData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={GENDER_COLORS[index % GENDER_COLORS.length]} />
+                              ))}
+                            </Pie>
+                            <Tooltip
+                              contentStyle={{ 
+                                backgroundColor: "hsl(var(--card))", 
+                                borderRadius: "0.5rem",
+                                border: "1px solid hsl(var(--border))",
+                              }}
+                              formatter={(value) => [`${value} patients`, 'Count']}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-full flex items-center justify-center">
+                          <p className="text-muted-foreground">No patient data available yet</p>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -326,12 +354,39 @@ const Analytics = () => {
               <div className="grid grid-cols-1 gap-6">
                 <Card className="card-shadow">
                   <CardHeader>
-                    <CardTitle className="text-base">Prescription Analytics</CardTitle>
+                    <CardTitle className="text-base">Most Prescribed Medicines</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-center py-10 text-muted-foreground">
-                      Detailed prescription analytics will be available soon.
-                    </p>
+                    {loading ? (
+                      renderSkeletonChart(400)
+                    ) : data.medicineData.length > 0 ? (
+                      <div className="h-[400px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={data.medicineData}>
+                            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.15} vertical={false} />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip
+                              contentStyle={{ 
+                                backgroundColor: "hsl(var(--card))", 
+                                borderRadius: "0.5rem",
+                                border: "1px solid hsl(var(--border))",
+                              }}
+                            />
+                            <Bar 
+                              dataKey="count" 
+                              fill="#30D158" 
+                              radius={[4, 4, 0, 0]} 
+                              barSize={50}
+                            />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    ) : (
+                      <div className="h-[300px] flex items-center justify-center">
+                        <p className="text-muted-foreground">No prescription data available yet</p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -344,9 +399,36 @@ const Analytics = () => {
                     <CardTitle className="text-base">Lab Test Analytics</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-center py-10 text-muted-foreground">
-                      Detailed lab test analytics will be available soon.
-                    </p>
+                    {loading ? (
+                      renderSkeletonChart(400)
+                    ) : data.testData.length > 0 ? (
+                      <div className="h-[400px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={data.testData}>
+                            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.15} vertical={false} />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip
+                              contentStyle={{ 
+                                backgroundColor: "hsl(var(--card))", 
+                                borderRadius: "0.5rem",
+                                border: "1px solid hsl(var(--border))",
+                              }}
+                            />
+                            <Bar 
+                              dataKey="count" 
+                              fill="#64D2FF" 
+                              radius={[4, 4, 0, 0]} 
+                              barSize={50}
+                            />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    ) : (
+                      <div className="h-[300px] flex items-center justify-center">
+                        <p className="text-muted-foreground">No lab test data available yet</p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
