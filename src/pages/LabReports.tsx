@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import PageTransition from "@/components/layout/PageTransition";
 import Header from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, Filter, TestTube, Download, Eye } from "lucide-react";
+import { Plus, Search, Filter, TestTube, Download, Eye, Printer } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { 
   Table, 
@@ -35,8 +35,9 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useLabReports } from "@/hooks/useLabReports";
+import { useLabReports, type LabReport } from "@/hooks/useLabReports";
 import LabReportForm from "@/components/lab-reports/LabReportForm";
+import LabReportDetailDialog from "@/components/lab-reports/LabReportDetailDialog";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -54,6 +55,8 @@ const LabReports = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<LabReport | null>(null);
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
 
   // Filter reports based on search term and status filter
   const filteredReports = labReports.filter(report => {
@@ -72,6 +75,11 @@ const LabReports = () => {
     } catch (error) {
       console.error("Error adding lab report:", error);
     }
+  };
+
+  const handleViewReport = (report: LabReport) => {
+    setSelectedReport(report);
+    setShowDetailDialog(true);
   };
 
   return (
@@ -172,7 +180,7 @@ const LabReports = () => {
                   </TableRow>
                 ) : (
                   filteredReports.map((report) => (
-                    <TableRow key={report.id}>
+                    <TableRow key={report.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleViewReport(report)}>
                       <TableCell>
                         <div>
                           <p className="font-medium">{report.patient.name}</p>
@@ -201,7 +209,7 @@ const LabReports = () => {
                       </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
+                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                             <Button variant="ghost" size="icon" className="h-8 w-8">
                               <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4">
                                 <path d="M3.625 7.5C3.625 8.12132 3.12132 8.625 2.5 8.625C1.87868 8.625 1.375 8.12132 1.375 7.5C1.375 6.87868 1.87868 6.375 2.5 6.375C3.12132 6.375 3.625 6.87868 3.625 7.5ZM8.625 7.5C8.625 8.12132 8.12132 8.625 7.5 8.625C6.87868 8.625 6.375 8.12132 6.375 7.5C6.375 6.87868 6.87868 6.375 7.5 6.375C8.12132 6.375 8.625 6.87868 8.625 7.5ZM13.625 7.5C13.625 8.12132 13.1213 8.625 12.5 8.625C11.8787 8.625 11.375 8.12132 11.375 7.5C11.375 6.87868 11.8787 6.375 12.5 6.375C13.1213 6.375 13.625 6.87868 13.625 7.5Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
@@ -209,11 +217,29 @@ const LabReports = () => {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-[160px]">
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              handleViewReport(report);
+                            }}>
                               <Eye className="h-4 w-4 mr-2" />
                               View
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedReport(report);
+                              const printContent = document.getElementById('lab-report-print');
+                              if (printContent) {
+                                const originalContents = document.body.innerHTML;
+                                document.body.innerHTML = printContent.innerHTML;
+                                window.print();
+                                document.body.innerHTML = originalContents;
+                                window.location.reload();
+                              }
+                            }}>
+                              <Printer className="h-4 w-4 mr-2" />
+                              Print
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
                               <Download className="h-4 w-4 mr-2" />
                               Download
                             </DropdownMenuItem>
@@ -236,6 +262,12 @@ const LabReports = () => {
             <LabReportForm onSubmit={handleAddLabReport} />
           </DialogContent>
         </Dialog>
+
+        <LabReportDetailDialog 
+          report={selectedReport} 
+          open={showDetailDialog} 
+          onOpenChange={setShowDetailDialog} 
+        />
       </div>
     </PageTransition>
   );

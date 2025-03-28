@@ -4,14 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Plus, Filter } from "lucide-react";
 import PatientCard from "./PatientCard";
-import { usePatients } from "@/hooks/usePatients";
+import { usePatients, type Patient } from "@/hooks/usePatients";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface PatientListProps {
   onAddPatient: () => void;
+  onViewPatient: (patient: Patient) => void;
 }
 
-const PatientList = ({ onAddPatient }: PatientListProps) => {
+const PatientList = ({ onAddPatient, onViewPatient }: PatientListProps) => {
   const { patients, loading } = usePatients();
   const [searchTerm, setSearchTerm] = useState("");
   const [filter, setFilter] = useState("all");
@@ -84,7 +85,11 @@ const PatientList = ({ onAddPatient }: PatientListProps) => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
           {filteredPatients.map((patient) => (
-            <PatientCard key={patient.id} patient={patient} />
+            <PatientCard 
+              key={patient.id} 
+              patient={patient} 
+              onViewPatient={onViewPatient} 
+            />
           ))}
         </div>
       )}

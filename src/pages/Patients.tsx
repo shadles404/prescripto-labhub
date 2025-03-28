@@ -4,6 +4,7 @@ import PageTransition from "@/components/layout/PageTransition";
 import Header from "@/components/layout/Header";
 import PatientList from "@/components/patients/PatientList";
 import PatientForm from "@/components/patients/PatientForm";
+import PatientDetailDialog from "@/components/patients/PatientDetailDialog";
 import { 
   Dialog, 
   DialogContent, 
@@ -11,12 +12,20 @@ import {
   DialogTitle 
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { type Patient } from "@/hooks/usePatients";
 
 const Patients = () => {
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
 
   const handleAddPatient = () => {
     setShowAddDialog(true);
+  };
+
+  const handleViewPatient = (patient: Patient) => {
+    setSelectedPatient(patient);
+    setShowDetailDialog(true);
   };
 
   const handleSubmit = (values: any) => {
@@ -37,7 +46,10 @@ const Patients = () => {
             </p>
           </div>
           
-          <PatientList onAddPatient={handleAddPatient} />
+          <PatientList 
+            onAddPatient={handleAddPatient} 
+            onViewPatient={handleViewPatient}
+          />
           
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
             <DialogContent className="sm:max-w-[600px]">
@@ -47,6 +59,12 @@ const Patients = () => {
               <PatientForm onSubmit={handleSubmit} />
             </DialogContent>
           </Dialog>
+
+          <PatientDetailDialog 
+            patient={selectedPatient} 
+            open={showDetailDialog} 
+            onOpenChange={setShowDetailDialog} 
+          />
         </div>
       </div>
     </PageTransition>

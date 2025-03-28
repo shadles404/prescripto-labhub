@@ -13,11 +13,12 @@ import { type Patient } from "@/hooks/usePatients";
 
 interface PatientCardProps {
   patient: Patient;
+  onViewPatient: (patient: Patient) => void;
 }
 
-const PatientCard = ({ patient }: PatientCardProps) => {
+const PatientCard = ({ patient, onViewPatient }: PatientCardProps) => {
   return (
-    <Card className="overflow-hidden card-shadow">
+    <Card className="overflow-hidden card-shadow hover:shadow-md transition-shadow cursor-pointer" onClick={() => onViewPatient(patient)}>
       <CardContent className="p-4">
         <div className="flex items-center space-x-3 mb-3">
           <Avatar className="h-10 w-10">
@@ -48,11 +49,14 @@ const PatientCard = ({ patient }: PatientCardProps) => {
       </CardContent>
       
       <CardFooter className="flex justify-between p-4 pt-0 gap-2">
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" onClick={(e) => e.stopPropagation()}>
           <FileText className="h-4 w-4 mr-2" />
           Records
         </Button>
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" onClick={(e) => {
+          e.stopPropagation();
+          onViewPatient(patient);
+        }}>
           <Eye className="h-4 w-4 mr-2" />
           View
         </Button>
