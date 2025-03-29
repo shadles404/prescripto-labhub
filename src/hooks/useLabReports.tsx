@@ -16,6 +16,20 @@ export type LabReport = {
   status?: "completed" | "pending"; // Using a union type instead of string
 };
 
+export type LabReportFormData = {
+  patient_id: string;
+  test_date: string;
+  tests?: Array<{
+    test_name: string;
+    result: string;
+    normal_range?: string;
+  }>;
+  // For backward compatibility
+  test_name?: string;
+  result?: string;
+  normal_range?: string;
+};
+
 export const useLabReports = () => {
   const [labReports, setLabReports] = useState<LabReport[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,29 +88,46 @@ export const useLabReports = () => {
     }
   };
 
-  const addLabReport = async (reportData: Omit<LabReport, 'id' | 'patient'>) => {
+  const addLabReport = async (reportData: LabReportFormData) => {
     try {
       setLoading(true);
       
-      const { data, error } = await supabase
-        .from('lab_reports')
-        .insert([{
-          patient_id: reportData.patient_id,
-          test_name: reportData.test_name,
-          result: reportData.result,
-          normal_range: reportData.normal_range,
-          test_date: reportData.test_date
-        }])
-        .select();
+      // Handle both single test and multiple tests format
+      if (reportData.tests && reportData.tests.length > 0) {
+        // Multiple tests - insert each test as a separate row
+        const insertPromises = reportData.tests.map(test => 
+          supabase
+            .from('lab_reports')
+            .insert([{
+              patient_id: reportData.patient_id,
+              test_name: test.test_name,
+              result: test.result,
+              normal_range: test.normal_range || null,
+              test_date: reportData.test_date
+            }])
+        );
         
-      if (error) throw error;
-      
-      toast.success("Lab report added successfully");
+        await Promise.all(insertPromises);
+        toast.success(`${reportData.tests.length} lab tests added successfully`);
+      } else if (reportData.test_name) {
+        // Single test (old format)
+        await supabase
+          .from('lab_reports')
+          .insert([{
+            patient_id: reportData.patient_id,
+            test_name: reportData.test_name,
+            result: reportData.result || '',
+            normal_range: reportData.normal_range || null,
+            test_date: reportData.test_date
+          }]);
+          
+        toast.success("Lab report added successfully");
+      }
       
       // Refresh the lab reports list
       fetchLabReports();
       
-      return data;
+      return true;
     } catch (err) {
       console.error("Error adding lab report:", err);
       toast.error("Failed to add lab report");
