@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useFieldArray } from "react-hook-form";
@@ -13,13 +12,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { usePatients } from "@/hooks/usePatients";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ChevronDown, ChevronUp, Plus, Search, Trash2, X } from "lucide-react";
@@ -91,8 +83,6 @@ const LabReportForm = ({ onSubmit }: LabReportFormProps) => {
   );
 
   const handleFormSubmit = (values: FormValues) => {
-    // Transform multi-test format to match expected API format if needed
-    // For backward compatibility, we'll take the first test's details if only one test
     if (values.tests.length === 1) {
       const singleTest = {
         patient_id: values.patient_id,
@@ -103,7 +93,6 @@ const LabReportForm = ({ onSubmit }: LabReportFormProps) => {
       };
       onSubmit(singleTest as any);
     } else {
-      // Pass the multi-test format directly
       onSubmit(values);
     }
     form.reset();
@@ -131,7 +120,11 @@ const LabReportForm = ({ onSubmit }: LabReportFormProps) => {
                           value={searchTerm}
                           onChange={(e) => {
                             setSearchTerm(e.target.value);
-                            setIsPopoverOpen(e.target.value.length > 0 && !selectedPatient);
+                            if (selectedPatient) {
+                              setSelectedPatient(null);
+                              form.setValue("patient_id", "");
+                            }
+                            setIsPopoverOpen(e.target.value.length > 0);
                           }}
                           onClick={() => {
                             if (searchTerm.length > 0 && !selectedPatient) {
@@ -167,10 +160,7 @@ const LabReportForm = ({ onSubmit }: LabReportFormProps) => {
                                 key={patient.id}
                                 type="button"
                                 variant="ghost"
-                                className={cn(
-                                  "flex w-full items-center justify-start space-x-2 rounded-md p-2 text-left",
-                                  selectedPatient?.id === patient.id && "bg-accent"
-                                )}
+                                className="flex w-full items-center justify-start space-x-2 rounded-md p-2 text-left"
                                 onClick={() => handlePatientChange(patient)}
                               >
                                 <Avatar className="h-8 w-8">
@@ -256,12 +246,11 @@ const LabReportForm = ({ onSubmit }: LabReportFormProps) => {
             </div>
           </div>
 
-          {/* Table Headers */}
           <div className="grid grid-cols-12 gap-3 mb-2 px-4 py-2 bg-muted/50 rounded-t-md">
             <Label className="col-span-5 text-xs font-medium">Test Name</Label>
             <Label className="col-span-3 text-xs font-medium">Result</Label>
             <Label className="col-span-3 text-xs font-medium">Normal Range</Label>
-            <div className="col-span-1"></div> {/* For delete button */}
+            <div className="col-span-1"></div>
           </div>
 
           <Collapsible open={!isTestsCollapsed || fields.length <= 3}>
