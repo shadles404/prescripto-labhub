@@ -39,7 +39,7 @@ const Sidebar = () => {
       <div className="flex items-center h-16 px-4 border-b border-border">
         <div className="flex items-center space-x-2 overflow-hidden">
           <div className="w-8 h-8 rounded-md bg-medical-blue flex items-center justify-center">
-            <span className="text-white font-semibold">Rx</span>
+            <span className="text-white font-semibold">SF</span>
           </div>
           <h1 
             className={cn(
@@ -47,7 +47,7 @@ const Sidebar = () => {
               collapsed ? "opacity-0 w-0" : "opacity-100"
             )}
           >
-            PrescriptoLab
+            Saafi Hospital
           </h1>
         </div>
       </div>

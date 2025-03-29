@@ -24,9 +24,9 @@ const Dashboard = () => {
         <div className="flex-1 p-6">
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h2 className="text-2xl font-medium mb-1">Welcome back, Dr. Johnson</h2>
+              <h2 className="text-2xl font-medium mb-1">Welcome back, Doctor</h2>
               <p className="text-muted-foreground">
-                Here's what's happening in your practice today
+                Here's what's happening in the hospital today
               </p>
             </div>
             <Button onClick={handleRefresh} variant="outline" size="sm">
