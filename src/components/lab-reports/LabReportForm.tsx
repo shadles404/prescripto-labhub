@@ -22,7 +22,10 @@ import {
 } from "@/components/ui/select";
 import { usePatients } from "@/hooks/usePatients";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Label } from "@/components/ui/label";
 
 const testSchema = z.object({
   test_name: z.string().min(1, "Test name is required"),
@@ -47,6 +50,7 @@ interface LabReportFormProps {
 const LabReportForm = ({ onSubmit }: LabReportFormProps) => {
   const { patients, loading: loadingPatients } = usePatients();
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
+  const [isTestsCollapsed, setIsTestsCollapsed] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -138,88 +142,123 @@ const LabReportForm = ({ onSubmit }: LabReportFormProps) => {
         <div className="rounded-lg border border-border/40 p-4 card-shadow">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-medium">Test Details</h3>
-            <Button 
-              type="button" 
-              variant="outline" 
-              size="sm" 
-              onClick={() => append({ test_name: "", result: "", normal_range: "" })}
-            >
-              <Plus className="h-3.5 w-3.5 mr-1" />
-              Add Another Test
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm" 
+                onClick={() => append({ test_name: "", result: "", normal_range: "" })}
+              >
+                <Plus className="h-3.5 w-3.5 mr-1" />
+                Add Another Test
+              </Button>
+              {fields.length > 3 && (
+                <Collapsible 
+                  open={!isTestsCollapsed} 
+                  onOpenChange={(open) => setIsTestsCollapsed(!open)}
+                  className="inline-flex"
+                >
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 px-2">
+                      {isTestsCollapsed ? (
+                        <ChevronDown className="h-4 w-4" />
+                      ) : (
+                        <ChevronUp className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </CollapsibleTrigger>
+                </Collapsible>
+              )}
+            </div>
           </div>
 
-          {fields.map((field, index) => (
-            <div 
-              key={field.id} 
-              className="p-3 bg-muted/30 rounded-md mb-3 border border-border/40"
-            >
-              <div className="flex justify-between items-center mb-2">
-                <h4 className="text-sm font-medium">Test #{index + 1}</h4>
-                {fields.length > 1 && (
-                  <Button 
-                    type="button" 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-7 w-7 text-destructive" 
-                    onClick={() => remove(index)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-              
-              <div className="grid grid-cols-1 gap-4">
-                <FormField
-                  control={form.control}
-                  name={`tests.${index}.test_name`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Test Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., Blood Glucose, CBC, etc." {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name={`tests.${index}.result`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Result</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., 120 mg/dL" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name={`tests.${index}.normal_range`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Normal Range (Optional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., 70-100 mg/dL" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+          {/* Table Headers */}
+          <div className="grid grid-cols-12 gap-3 mb-2 px-4 py-2 bg-muted/50 rounded-t-md">
+            <Label className="col-span-5 text-xs font-medium">Test Name</Label>
+            <Label className="col-span-3 text-xs font-medium">Result</Label>
+            <Label className="col-span-3 text-xs font-medium">Normal Range</Label>
+            <div className="col-span-1"></div> {/* For delete button */}
+          </div>
+
+          <Collapsible open={!isTestsCollapsed || fields.length <= 3}>
+            <CollapsibleContent>
+              <ScrollArea className="max-h-[300px] overflow-auto">
+                <div className="space-y-2 pr-2">
+                  {fields.map((field, index) => (
+                    <div 
+                      key={field.id} 
+                      className="grid grid-cols-12 gap-3 px-3 py-2 bg-muted/30 rounded-md border border-border/40 items-center"
+                    >
+                      <FormField
+                        control={form.control}
+                        name={`tests.${index}.test_name`}
+                        render={({ field }) => (
+                          <FormItem className="col-span-5 mb-0">
+                            <FormControl>
+                              <Input placeholder="e.g., Blood Glucose" {...field} className="h-9" />
+                            </FormControl>
+                            <FormMessage className="text-xs mt-1" />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name={`tests.${index}.result`}
+                        render={({ field }) => (
+                          <FormItem className="col-span-3 mb-0">
+                            <FormControl>
+                              <Input placeholder="e.g., 120 mg/dL" {...field} className="h-9" />
+                            </FormControl>
+                            <FormMessage className="text-xs mt-1" />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name={`tests.${index}.normal_range`}
+                        render={({ field }) => (
+                          <FormItem className="col-span-3 mb-0">
+                            <FormControl>
+                              <Input placeholder="e.g., 70-100 mg/dL" {...field} className="h-9" />
+                            </FormControl>
+                            <FormMessage className="text-xs mt-1" />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="col-span-1 text-right">
+                        {fields.length > 1 && (
+                          <Button 
+                            type="button" 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-7 w-7 text-destructive" 
+                            onClick={() => remove(index)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CollapsibleContent>
+          </Collapsible>
+
+          {isTestsCollapsed && fields.length > 3 && (
+            <div className="text-center text-sm text-muted-foreground py-2">
+              {fields.length} tests added. Click to expand.
             </div>
-          ))}
+          )}
           
           <FormField
             control={form.control}
             name="test_date"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="mt-4">
                 <FormLabel>Test Date</FormLabel>
                 <FormControl>
                   <Input type="date" {...field} />
