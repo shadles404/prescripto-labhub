@@ -22,10 +22,12 @@ import {
 } from "@/components/ui/select";
 import { usePatients } from "@/hooks/usePatients";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, Search, Trash2, X } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 const testSchema = z.object({
   test_name: z.string().min(1, "Test name is required"),
@@ -51,6 +53,8 @@ const LabReportForm = ({ onSubmit }: LabReportFormProps) => {
   const { patients, loading: loadingPatients } = usePatients();
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
   const [isTestsCollapsed, setIsTestsCollapsed] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -68,11 +72,23 @@ const LabReportForm = ({ onSubmit }: LabReportFormProps) => {
     control: form.control,
   });
 
-  const handlePatientChange = (patientId: string) => {
-    const patient = patients.find(p => p.id === patientId);
+  const handlePatientChange = (patient: any) => {
     setSelectedPatient(patient);
-    form.setValue("patient_id", patientId);
+    form.setValue("patient_id", patient.id);
+    setSearchTerm(patient.name);
+    setIsPopoverOpen(false);
   };
+
+  const clearPatientSelection = () => {
+    setSelectedPatient(null);
+    form.setValue("patient_id", "");
+    setSearchTerm("");
+  };
+
+  const filteredPatients = patients.filter((patient) => 
+    patient.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    patient.id.includes(searchTerm)
+  );
 
   const handleFormSubmit = (values: FormValues) => {
     // Transform multi-test format to match expected API format if needed
@@ -91,6 +107,8 @@ const LabReportForm = ({ onSubmit }: LabReportFormProps) => {
       onSubmit(values);
     }
     form.reset();
+    setSelectedPatient(null);
+    setSearchTerm("");
   };
 
   return (
@@ -101,22 +119,79 @@ const LabReportForm = ({ onSubmit }: LabReportFormProps) => {
             control={form.control}
             name="patient_id"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="space-y-4">
                 <FormLabel>Patient</FormLabel>
-                <Select onValueChange={handlePatientChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder={loadingPatients ? "Loading patients..." : "Select a patient"} />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {patients.map((patient) => (
-                      <SelectItem key={patient.id} value={patient.id}>
-                        {patient.name} - {patient.age} years, {patient.gender}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div>
+                  <Popover open={isPopoverOpen && searchTerm.length > 0 && !selectedPatient}
+                           onOpenChange={setIsPopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          value={searchTerm}
+                          onChange={(e) => {
+                            setSearchTerm(e.target.value);
+                            setIsPopoverOpen(e.target.value.length > 0 && !selectedPatient);
+                          }}
+                          onClick={() => {
+                            if (searchTerm.length > 0 && !selectedPatient) {
+                              setIsPopoverOpen(true);
+                            }
+                          }}
+                          placeholder="Search patient by name or ID..."
+                          className="pl-9 pr-10"
+                        />
+                        {searchTerm && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6"
+                            onClick={clearPatientSelection}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <ScrollArea className="max-h-60">
+                        {loadingPatients ? (
+                          <div className="p-4 text-center text-muted-foreground">Loading patients...</div>
+                        ) : filteredPatients.length === 0 ? (
+                          <div className="p-4 text-center text-muted-foreground">No patients found</div>
+                        ) : (
+                          <div className="p-1">
+                            {filteredPatients.map((patient) => (
+                              <Button
+                                key={patient.id}
+                                type="button"
+                                variant="ghost"
+                                className={cn(
+                                  "flex w-full items-center justify-start space-x-2 rounded-md p-2 text-left",
+                                  selectedPatient?.id === patient.id && "bg-accent"
+                                )}
+                                onClick={() => handlePatientChange(patient)}
+                              >
+                                <Avatar className="h-8 w-8">
+                                  <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                                    {patient.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <p className="font-medium">{patient.name}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {patient.age} years • {patient.gender}
+                                  </p>
+                                </div>
+                              </Button>
+                            ))}
+                          </div>
+                        )}
+                      </ScrollArea>
+                    </PopoverContent>
+                  </Popover>
+                </div>
                 <FormMessage />
               </FormItem>
             )}
@@ -135,6 +210,15 @@ const LabReportForm = ({ onSubmit }: LabReportFormProps) => {
                   {selectedPatient.age} years • {selectedPatient.gender}
                 </p>
               </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="ml-auto"
+                onClick={clearPatientSelection}
+              >
+                Change
+              </Button>
             </div>
           )}
         </div>
