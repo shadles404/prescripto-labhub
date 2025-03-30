@@ -9,6 +9,8 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -20,6 +22,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 const Login = () => {
   const { signIn, isLoading } = useAuth();
   const [authError, setAuthError] = useState<string | null>(null);
+  const [emailNotConfirmed, setEmailNotConfirmed] = useState(false);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -31,18 +34,27 @@ const Login = () => {
 
   const onSubmit = async (values: LoginFormValues) => {
     setAuthError(null);
-    const { error } = await signIn(values.email, values.password);
+    setEmailNotConfirmed(false);
+    const { error, errorType } = await signIn(values.email, values.password);
     
     if (error) {
       console.error("Login error:", error);
-      setAuthError(
-        error.message === "Invalid login credentials"
-          ? "The email or password you entered is incorrect."
-          : error.message
-      );
-      toast.error("Login failed", {
-        description: "Please check your credentials and try again.",
-      });
+      
+      if (errorType === "email_not_confirmed") {
+        setEmailNotConfirmed(true);
+        toast.error("Email not confirmed", {
+          description: "Please check your inbox for a confirmation email and follow the instructions to verify your account.",
+        });
+      } else {
+        setAuthError(
+          error.message === "Invalid login credentials"
+            ? "The email or password you entered is incorrect."
+            : error.message
+        );
+        toast.error("Login failed", {
+          description: "Please check your credentials and try again.",
+        });
+      }
     } else {
       toast.success("Login successful", {
         description: "Welcome to Saafi Hospital Management System!",
@@ -63,6 +75,15 @@ const Login = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {emailNotConfirmed && (
+            <Alert variant="destructive" className="mb-4">
+              <ExclamationTriangleIcon className="h-4 w-4" />
+              <AlertDescription>
+                Your email is not confirmed. Please check your inbox for a verification email and follow the instructions.
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
@@ -102,7 +123,7 @@ const Login = () => {
                 )}
               />
               
-              {authError && (
+              {authError && !emailNotConfirmed && (
                 <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
                   {authError}
                 </div>

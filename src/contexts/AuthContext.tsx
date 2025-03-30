@@ -11,6 +11,7 @@ interface AuthContextProps {
   signIn: (email: string, password: string) => Promise<{
     error: Error | null;
     data: Session | null;
+    errorType?: string;
   }>;
   signOut: () => Promise<void>;
 }
@@ -52,16 +53,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         password,
       });
       
-      if (error) throw error;
+      if (error) {
+        let errorType = "";
+        if (error.message === "Email not confirmed") {
+          errorType = "email_not_confirmed";
+        }
+        
+        throw { ...error, errorType };
+      }
       
       if (data.session) {
         navigate("/");
       }
       
       return { data: data.session, error: null };
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error signing in:", error);
-      return { data: null, error: error as Error };
+      return { 
+        data: null, 
+        error: error as Error, 
+        errorType: error.errorType || error.code 
+      };
     } finally {
       setIsLoading(false);
     }
