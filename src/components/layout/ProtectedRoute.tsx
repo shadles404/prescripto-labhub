@@ -2,10 +2,17 @@
 import { useEffect } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 const ProtectedRoute = () => {
   const { user, isLoading } = useAuth();
   const location = useLocation();
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      toast.error("You must be logged in to access this page");
+    }
+  }, [isLoading, user]);
 
   // Show loading state while checking authentication
   if (isLoading) {

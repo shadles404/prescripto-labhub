@@ -83,18 +83,7 @@ const LabReportForm = ({ onSubmit }: LabReportFormProps) => {
   );
 
   const handleFormSubmit = (values: FormValues) => {
-    if (values.tests.length === 1) {
-      const singleTest = {
-        patient_id: values.patient_id,
-        test_name: values.tests[0].test_name,
-        result: values.tests[0].result,
-        normal_range: values.tests[0].normal_range,
-        test_date: values.test_date
-      };
-      onSubmit(singleTest as any);
-    } else {
-      onSubmit(values);
-    }
+    onSubmit(values);
     form.reset();
     setSelectedPatient(null);
     setSearchTerm("");
