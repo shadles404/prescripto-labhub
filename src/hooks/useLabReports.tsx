@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -34,7 +33,8 @@ export const useLabReports = () => {
   const [labReports, setLabReports] = useState<LabReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  
+  const [loadingState, setLoadingState] = useState<'idle' | 'saving' | 'error'>('idle');
+
   const fetchLabReports = async () => {
     try {
       setLoading(true);
@@ -56,9 +56,7 @@ export const useLabReports = () => {
         
       if (error) throw error;
       
-      // Transform the data to include patient name and status with correct typing
       const formattedData = (data || []).map(report => {
-        // Determine status as a union type, not a general string
         const status: "completed" | "pending" = 
           report.normal_range && report.result <= report.normal_range 
             ? 'completed' 
@@ -88,59 +86,57 @@ export const useLabReports = () => {
     }
   };
 
-  const addLabReport = async (reportData: LabReportFormData) => {
+  const addLabReport = async (values: any) => {
     try {
-      setLoading(true);
+      setLoadingState('saving');
       
-      // Handle both single test and multiple tests format
-      if (reportData.tests && reportData.tests.length > 0) {
-        // Multiple tests - insert each test as a separate row
-        const insertPromises = reportData.tests.map(test => 
-          supabase
-            .from('lab_reports')
-            .insert([{
-              patient_id: reportData.patient_id,
-              test_name: test.test_name,
-              result: test.result,
-              normal_range: test.normal_range || null,
-              test_date: reportData.test_date
-            }])
-        );
+      if (Array.isArray(values.tests) && values.tests.length > 0) {
+        const labReports = values.tests.map((test: any) => ({
+          patient_id: values.patient_id,
+          test_name: test.test_name,
+          result: test.result,
+          normal_range: test.normal_range,
+          test_date: values.test_date
+        }));
         
-        await Promise.all(insertPromises);
-        toast.success(`${reportData.tests.length} lab tests added successfully`);
-      } else if (reportData.test_name) {
-        // Single test (old format)
-        await supabase
+        const { data, error } = await supabase
           .from('lab_reports')
-          .insert([{
-            patient_id: reportData.patient_id,
-            test_name: reportData.test_name,
-            result: reportData.result || '',
-            normal_range: reportData.normal_range || null,
-            test_date: reportData.test_date
-          }]);
+          .insert(labReports)
+          .select();
           
-        toast.success("Lab report added successfully");
+        if (error) throw error;
+        
+        if (data) {
+          setLabReports((prev) => [...prev, ...data]);
+          toast.success(`${data.length} lab reports added successfully`);
+        }
+      } else {
+        const { data, error } = await supabase
+          .from('lab_reports')
+          .insert(values)
+          .select();
+          
+        if (error) throw error;
+        
+        if (data && data[0]) {
+          setLabReports((prev) => [...prev, data[0]]);
+          toast.success('Lab report added successfully');
+        }
       }
       
-      // Refresh the lab reports list
-      fetchLabReports();
-      
+      setLoadingState('idle');
       return true;
-    } catch (err) {
-      console.error("Error adding lab report:", err);
-      toast.error("Failed to add lab report");
-      throw err;
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      console.error('Error adding lab report:', error);
+      toast.error('Failed to add lab report');
+      setLoadingState('error');
+      return false;
     }
   };
   
   useEffect(() => {
     fetchLabReports();
     
-    // Set up real-time listener for changes
     const channel = supabase
       .channel('public:lab_reports')
       .on('postgres_changes', { 
@@ -152,7 +148,6 @@ export const useLabReports = () => {
       })
       .subscribe();
     
-    // Cleanup function
     return () => {
       supabase.removeChannel(channel);
     };
@@ -163,6 +158,7 @@ export const useLabReports = () => {
     loading, 
     error, 
     refetch: fetchLabReports,
-    addLabReport
+    addLabReport,
+    loadingState
   };
 };
