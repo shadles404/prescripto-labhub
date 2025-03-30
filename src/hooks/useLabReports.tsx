@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -102,24 +103,76 @@ export const useLabReports = () => {
         const { data, error } = await supabase
           .from('lab_reports')
           .insert(labReports)
-          .select();
+          .select(`
+            id,
+            patient_id,
+            test_name,
+            result,
+            normal_range,
+            test_date,
+            patients (
+              name
+            )
+          `);
           
         if (error) throw error;
         
         if (data) {
-          setLabReports((prev) => [...prev, ...data]);
+          // Process the data to match the LabReport type before adding to state
+          const formattedNewReports = data.map(report => ({
+            id: report.id,
+            patient_id: report.patient_id,
+            test_name: report.test_name,
+            result: report.result,
+            normal_range: report.normal_range,
+            test_date: report.test_date,
+            patient: {
+              name: report.patients?.name || 'Unknown Patient'
+            },
+            status: (report.normal_range && report.result <= report.normal_range) 
+              ? 'completed' as const
+              : 'pending' as const
+          }));
+          
+          setLabReports((prev) => [...prev, ...formattedNewReports]);
           toast.success(`${data.length} lab reports added successfully`);
         }
       } else {
         const { data, error } = await supabase
           .from('lab_reports')
           .insert(values)
-          .select();
+          .select(`
+            id,
+            patient_id,
+            test_name,
+            result,
+            normal_range,
+            test_date,
+            patients (
+              name
+            )
+          `);
           
         if (error) throw error;
         
         if (data && data[0]) {
-          setLabReports((prev) => [...prev, data[0]]);
+          // Process the data to match the LabReport type before adding to state
+          const formattedNewReport: LabReport = {
+            id: data[0].id,
+            patient_id: data[0].patient_id,
+            test_name: data[0].test_name,
+            result: data[0].result,
+            normal_range: data[0].normal_range,
+            test_date: data[0].test_date,
+            patient: {
+              name: data[0].patients?.name || 'Unknown Patient'
+            },
+            status: (data[0].normal_range && data[0].result <= data[0].normal_range) 
+              ? 'completed' 
+              : 'pending'
+          };
+          
+          setLabReports((prev) => [...prev, formattedNewReport]);
           toast.success('Lab report added successfully');
         }
       }
