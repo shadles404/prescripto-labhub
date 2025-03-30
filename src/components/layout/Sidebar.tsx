@@ -8,13 +8,17 @@ import {
   TestTube, 
   BarChart, 
   ChevronLeft, 
-  ChevronRight 
+  ChevronRight,
+  LogOut
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 
 const Sidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const { signOut } = useAuth();
 
   const navigationItems = [
     { name: "Dashboard", icon: Home, path: "/" },
@@ -84,6 +88,21 @@ const Sidebar = () => {
             </Link>
           ))}
         </nav>
+      </div>
+
+      <div className="mt-auto border-t border-border p-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          className={cn(
+            "w-full flex justify-start text-muted-foreground hover:text-foreground",
+            collapsed ? "px-2" : "px-3"
+          )}
+          onClick={signOut}
+        >
+          <LogOut className="w-5 h-5 mr-2" />
+          <span className={cn(collapsed ? "hidden" : "block")}>Sign Out</span>
+        </Button>
       </div>
 
       <button
