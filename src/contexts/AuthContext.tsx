@@ -55,8 +55,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (error) {
         let errorType = "";
-        if (error.message === "Email not confirmed") {
+        
+        // Extract error type from the error message
+        if (error.message.includes("Email not confirmed") || error.message === "Email not confirmed") {
           errorType = "email_not_confirmed";
+        } else if (error.message.includes("Invalid login")) {
+          errorType = "invalid_credentials";
         }
         
         throw { ...error, errorType };
