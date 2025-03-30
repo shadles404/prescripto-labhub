@@ -10,7 +10,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
+import { AlertTriangle } from "lucide-react";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -77,7 +77,7 @@ const Login = () => {
         <CardContent>
           {emailNotConfirmed && (
             <Alert variant="destructive" className="mb-4">
-              <ExclamationTriangleIcon className="h-4 w-4" />
+              <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
                 Your email is not confirmed. Please check your inbox for a verification email and follow the instructions.
               </AlertDescription>
