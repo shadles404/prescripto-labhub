@@ -11,7 +11,6 @@ interface AuthContextProps {
   signIn: (email: string, password: string) => Promise<{
     error: Error | null;
     data: Session | null;
-    errorType?: string;
   }>;
   signOut: () => Promise<void>;
 }
@@ -54,16 +53,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
       
       if (error) {
-        let errorType = "";
-        
-        // Extract error type from the error message
-        if (error.message.includes("Email not confirmed") || error.message === "Email not confirmed") {
-          errorType = "email_not_confirmed";
-        } else if (error.message.includes("Invalid login")) {
-          errorType = "invalid_credentials";
-        }
-        
-        throw { ...error, errorType };
+        throw error;
       }
       
       if (data.session) {
@@ -75,8 +65,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.error("Error signing in:", error);
       return { 
         data: null, 
-        error: error as Error, 
-        errorType: error.errorType || error.code 
+        error: error as Error
       };
     } finally {
       setIsLoading(false);

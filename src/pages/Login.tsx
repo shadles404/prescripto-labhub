@@ -10,8 +10,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle, Mail } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { AlertTriangle } from "lucide-react";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -23,9 +22,6 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 const Login = () => {
   const { signIn, isLoading } = useAuth();
   const [authError, setAuthError] = useState<string | null>(null);
-  const [emailNotConfirmed, setEmailNotConfirmed] = useState(false);
-  const [resendingEmail, setResendingEmail] = useState(false);
-  const [lastEmailUsed, setLastEmailUsed] = useState("");
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -37,59 +33,23 @@ const Login = () => {
 
   const onSubmit = async (values: LoginFormValues) => {
     setAuthError(null);
-    setEmailNotConfirmed(false);
-    setLastEmailUsed(values.email);
-    const { error, errorType } = await signIn(values.email, values.password);
+    
+    const { error } = await signIn(values.email, values.password);
     
     if (error) {
       console.error("Login error:", error);
-      
-      if (errorType === "email_not_confirmed") {
-        setEmailNotConfirmed(true);
-        toast.error("Email not confirmed", {
-          description: "Please check your inbox for a confirmation email and follow the instructions to verify your account.",
-        });
-      } else {
-        setAuthError(
-          error.message === "Invalid login credentials"
-            ? "The email or password you entered is incorrect."
-            : error.message
-        );
-        toast.error("Login failed", {
-          description: "Please check your credentials and try again.",
-        });
-      }
+      setAuthError(
+        error.message === "Invalid login credentials"
+          ? "The email or password you entered is incorrect."
+          : error.message
+      );
+      toast.error("Login failed", {
+        description: "Please check your credentials and try again.",
+      });
     } else {
       toast.success("Login successful", {
         description: "Welcome to Saafi Hospital Management System!",
       });
-    }
-  };
-
-  const handleResendConfirmation = async () => {
-    if (!lastEmailUsed) return;
-    
-    setResendingEmail(true);
-    try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: lastEmailUsed,
-      });
-      
-      if (error) {
-        toast.error("Failed to resend confirmation email", { 
-          description: error.message 
-        });
-      } else {
-        toast.success("Confirmation email sent", { 
-          description: "Please check your inbox and follow the instructions to verify your account." 
-        });
-      }
-    } catch (err) {
-      console.error("Error resending confirmation:", err);
-      toast.error("Failed to resend confirmation email");
-    } finally {
-      setResendingEmail(false);
     }
   };
 
@@ -106,21 +66,11 @@ const Login = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {emailNotConfirmed && (
+          {authError && (
             <Alert variant="destructive" className="mb-4">
               <AlertTriangle className="h-4 w-4" />
-              <AlertDescription className="flex flex-col gap-3">
-                <span>Your email is not confirmed. Please check your inbox for a verification email and follow the instructions.</span>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full sm:w-auto flex items-center gap-2"
-                  onClick={handleResendConfirmation}
-                  disabled={resendingEmail}
-                >
-                  <Mail className="h-4 w-4" />
-                  {resendingEmail ? "Sending..." : "Resend confirmation email"}
-                </Button>
+              <AlertDescription>
+                {authError}
               </AlertDescription>
             </Alert>
           )}
@@ -163,12 +113,6 @@ const Login = () => {
                   </FormItem>
                 )}
               />
-              
-              {authError && !emailNotConfirmed && (
-                <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
-                  {authError}
-                </div>
-              )}
               
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Signing in..." : "Sign in"}
